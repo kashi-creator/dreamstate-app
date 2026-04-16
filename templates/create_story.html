@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Create Story{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 800px;">
+        <h1 class="mb-2">Create a Story</h1>
+        <p class="text-muted mb-4">Choose your transformation path, theme, frequency, and voice.</p>
+
+        <!-- Wizard Steps -->
+        <div class="wizard-steps">
+            <div class="wizard-step active" id="ws-1">
+                <div class="wizard-step-num">1</div>
+                <div class="wizard-step-label">Type</div>
+            </div>
+            <div class="wizard-step" id="ws-2">
+                <div class="wizard-step-num">2</div>
+                <div class="wizard-step-label">Theme</div>
+            </div>
+            <div class="wizard-step" id="ws-3">
+                <div class="wizard-step-num">3</div>
+                <div class="wizard-step-label">Frequency</div>
+            </div>
+            <div class="wizard-step" id="ws-4">
+                <div class="wizard-step-num">4</div>
+                <div class="wizard-step-label">Voice</div>
+            </div>
+        </div>
+
+        <!-- Step 1: Story Type -->
+        <div class="create-step active" id="cstep-1">
+            <h3 class="mb-3">What do you want to manifest?</h3>
+            <div class="type-grid">
+                {% for st in story_types %}
+                <div class="type-card" data-type="{{ st.id }}" onclick="selectType(this, '{{ st.id }}')">
+                    <div class="type-card-icon"><i class="fa-solid fa-{{ st.icon }}"></i></div>
+                    <h4>{{ st.name }}</h4>
+                    <p>{{ st.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="customPromptWrap" class="hidden mb-3">
+                <label class="form-label">Describe your custom dream</label>
+                <textarea class="form-textarea" id="customPrompt" placeholder="Tell us exactly what you want to manifest..."></textarea>
+            </div>
+            <div class="flex-between">
+                <span></span>
+                <button class="btn btn-gold" onclick="toStep(2)" id="step1Next" disabled>Choose Theme <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Step 2: Theme -->
+        <div class="create-step" id="cstep-2" style="display:none;">
+            <h3 class="mb-3">Choose your world</h3>
+            <div class="theme-grid">
+                {% for theme in themes %}
+                <div class="theme-card" data-theme="{{ theme.id }}" onclick="selectTheme(this, {{ theme.id }})" style="background: linear-gradient(135deg, {{ theme.color_primary }}22, var(--card));">
+                    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg, {{ theme.color_primary }}, {{ theme.color_secondary }});border-radius:var(--radius) var(--radius) 0 0;"></div>
+                    <h5>{{ theme.name }}</h5>
+                    <p>{{ theme.description[:80] }}...</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="flex-between">
+                <button class="btn btn-ghost" onclick="toStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button class="btn btn-gold" onclick="toStep(3)" id="step2Next" disabled>Choose Frequency <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Step 3: Frequency -->
+        <div class="create-step" id="cstep-3" style="display:none;">
+            <h3 class="mb-3">Tune your brainwaves</h3>
+            <div class="freq-grid">
+                {% for freq in frequencies %}
+                <div class="freq-card" data-freq="{{ freq.id }}" onclick="selectFreq(this, {{ freq.id }})">
+                    <h5>{{ freq.name }}</h5>
+                    <span class="hz">{{ freq.brain_state }}</span>
+                    <p>{{ freq.best_for }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="flex-between">
+                <button class="btn btn-ghost" onclick="toStep(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button class="btn btn-gold" onclick="toStep(4)" id="step3Next" disabled>Choose Voice <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Step 4: Voice + Generate -->
+        <div class="create-step" id="cstep-4" style="display:none;">
+            <h3 class="mb-3">Choose your guide's voice</h3>
+            <div class="voice-grid">
+                {% for voice in voices %}
+                <div class="voice-card" data-voice="{{ voice.id }}" data-name="{{ voice.name }}" onclick="selectVoice(this, '{{ voice.id }}', '{{ voice.name }}')">
+                    <div style="font-size: 1.5rem; margin-bottom: 8px; color: var(--violet);"><i class="fa-solid fa-microphone"></i></div>
+                    <div style="font-weight: 500;">{{ voice.name }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="flex-between">
+                <button class="btn btn-ghost" onclick="toStep(3)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button class="btn btn-gold btn-lg" onclick="generateStory()" id="generateBtn" disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate My Story
+                </button>
+            </div>
+        </div>
+
+        <!-- Generating State -->
+        <div class="create-step" id="cstep-generating" style="display:none;">
+            <div class="processing-animation">
+                <div class="spinner"></div>
+                <h2>Crafting Your Reality</h2>
+                <p class="text-muted mt-2">Your personalized subliminal story is being woven from your dream profile...</p>
+                <p class="text-muted mt-1" id="genStatus" style="font-size: 0.85rem;">This usually takes 15-30 seconds</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedType = null, selectedTheme = null, selectedFreq = null, selectedVoice = null, selectedVoiceName = null;
+
+function selectType(el, type) {
+    document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedType = type;
+    document.getElementById('step1Next').disabled = false;
+    document.getElementById('customPromptWrap').classList.toggle('hidden', type !== 'custom');
+}
+
+function selectTheme(el, id) {
+    document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedTheme = id;
+    document.getElementById('step2Next').disabled = false;
+}
+
+function selectFreq(el, id) {
+    document.querySelectorAll('.freq-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedFreq = id;
+    document.getElementById('step3Next').disabled = false;
+}
+
+function selectVoice(el, id, name) {
+    document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedVoice = id;
+    selectedVoiceName = name;
+    document.getElementById('generateBtn').disabled = false;
+}
+
+function toStep(n) {
+    document.querySelectorAll('.create-step').forEach(s => s.style.display = 'none');
+    document.getElementById('cstep-' + n).style.display = 'block';
+    for (let i = 1; i <= 4; i++) {
+        const ws = document.getElementById('ws-' + i);
+        ws.classList.remove('active', 'done');
+        if (i < n) ws.classList.add('done');
+        if (i === n) ws.classList.add('active');
+    }
+}
+
+async function generateStory() {
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+
+    document.querySelectorAll('.create-step').forEach(s => s.style.display = 'none');
+    document.getElementById('cstep-generating').style.display = 'block';
+
+    const resp = await fetch('/api/create-story', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            story_type: selectedType,
+            theme_id: selectedTheme,
+            frequency_id: selectedFreq,
+            voice_id: selectedVoice,
+            voice_name: selectedVoiceName,
+            custom_prompt: document.getElementById('customPrompt')?.value || ''
+        })
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+        // Poll for completion
+        const storyId = data.story_id;
+        const poll = setInterval(async () => {
+            const sr = await fetch(`/api/stories/${storyId}/status`);
+            const sd = await sr.json();
+            if (sd.status === 'ready') {
+                clearInterval(poll);
+                document.getElementById('genStatus').textContent = 'Story ready! Redirecting...';
+                setTimeout(() => window.location = `/scripts/${storyId}/read`, 1000);
+            } else if (sd.status === 'error') {
+                clearInterval(poll);
+                document.getElementById('genStatus').innerHTML = `<span style="color:var(--error)">Error: ${sd.error}</span>`;
+            }
+        }, 2000);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - {{ story.title }}{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 720px;">
+        <div class="flex-between mb-3">
+            <div>
+                <h1>{{ story.title }}</h1>
+                <p class="text-muted" style="font-size: 0.9rem;">
+                    {{ story.story_type|replace('_', ' ')|title }}
+                    {% if story.theme %} &middot; {{ story.theme.name }}{% endif %}
+                    {% if story.frequency %} &middot; {{ story.frequency.name }}{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-1">
+                <a href="{{ url_for('edit_script', story_id=story.id) }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
+                <a href="{{ url_for('library') }}" class="btn btn-ghost btn-sm">Library</a>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 40px; border-color: var(--violet);">
+            {% if story.script_text %}
+            <div class="script-read">{{ story.script_text }}</div>
+            {% else %}
+            <div class="empty-state">
+                <h3>Script Not Ready</h3>
+                <p>This story is still being generated or has no content yet.</p>
+                {% if story.status == 'generating' %}
+                <p class="text-violet"><i class="fa-solid fa-spinner fa-spin"></i> Generating...</p>
+                {% elif story.status == 'error' %}
+                <p style="color: var(--error);">Error: {{ story.generation_error }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

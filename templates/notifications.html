@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Notifications{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 640px;">
+        <div class="flex-between mb-3">
+            <h1>Notifications</h1>
+            {% if notifications %}
+            <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+            {% endif %}
+        </div>
+
+        {% if notifications %}
+        <div class="card" style="padding: 0; overflow: hidden;">
+            {% for n in notifications %}
+            <div class="notif-item {{ 'unread' if not n.is_read }}" onclick="markRead({{ n.id }}, '{{ n.link or '' }}')">
+                <div class="notif-dot"></div>
+                <div class="notif-content">
+                    <div class="notif-title">{{ n.title }}</div>
+                    <div class="notif-message">{{ n.message }}</div>
+                    <div class="notif-time">{{ n.created_at.strftime('%b %d, %Y at %I:%M %p') }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fa-solid fa-bell-slash"></i></div>
+                <h3>No Notifications</h3>
+                <p>You are all caught up. Keep creating and listening.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function markRead(id, link) {
+    await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({notification_id: id})
+    });
+    if (link) window.location = link;
+    else location.reload();
+}
+
+async function markAllRead() {
+    await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+    });
+    location.reload();
+}
+</script>
+{% endblock %}

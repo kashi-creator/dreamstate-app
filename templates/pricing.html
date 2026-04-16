@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DREAMSTATE - Pricing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="pricing-section">
+        <a href="{{ url_for('welcome') }}" style="font-family: var(--font-heading); font-size: 1.2rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text); display: inline-block; margin-bottom: 40px;">Dream<span style="color: var(--violet);">state</span></a>
+
+        <h2 style="font-size: 2.2rem; margin-bottom: 8px;">One Frequency. One Price.</h2>
+        <p class="text-muted" style="max-width: 500px; margin: 0 auto;">Everything you need to reprogram your subconscious and step into the reality you were born for.</p>
+
+        <div class="pricing-card">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold);">Full Access</div>
+            <div class="pricing-amount">$11<span>/month</span></div>
+            <ul class="pricing-features">
+                <li>Unlimited AI-generated subliminal stories</li>
+                <li>Personalized dream profile analysis</li>
+                <li>8 sacred themes and ambient soundscapes</li>
+                <li>8 brain-tuned frequencies (Delta to Gamma)</li>
+                <li>Multiple premium AI voices</li>
+                <li>Listening streaks and progress tracking</li>
+                <li>Sleep timer and loop modes</li>
+                <li>Edit, duplicate, and curate your library</li>
+            </ul>
+            <a href="{{ url_for('signup') }}" class="btn btn-gold btn-lg btn-block">Start Your Transformation</a>
+
+            <div class="founder-toggle" onclick="toggleFounder()">
+                Have an access code?
+            </div>
+            <div class="founder-input" id="founderInput">
+                <input type="text" class="form-input" id="founderCode" placeholder="Enter founder code" style="text-align: center;">
+                <div class="founder-status" id="founderStatus"></div>
+                <a href="{{ url_for('signup') }}?founder=1" class="btn btn-primary btn-sm btn-block mt-2" id="founderSignup" style="display: none;">Sign Up as Founder</a>
+            </div>
+        </div>
+
+        <p style="margin-top: 32px;"><a href="{{ url_for('login') }}" style="color: var(--text-dim); font-size: 0.9rem;">Already have an account? Sign in</a></p>
+    </div>
+
+    <script>
+    function toggleFounder() {
+        document.getElementById('founderInput').classList.toggle('show');
+    }
+
+    const codeInput = document.getElementById('founderCode');
+    let debounce;
+    codeInput.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(async () => {
+            const code = codeInput.value.trim();
+            if (!code) return;
+            const resp = await fetch('/validate-founder-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code})
+            });
+            const data = await resp.json();
+            const status = document.getElementById('founderStatus');
+            const btn = document.getElementById('founderSignup');
+            if (data.success) {
+                status.innerHTML = '<span style="color: var(--gold);">Valid founder code. Welcome.</span>';
+                btn.style.display = 'flex';
+                btn.href = '/signup?founder_code=' + encodeURIComponent(code);
+            } else {
+                status.innerHTML = '<span style="color: var(--text-dim);">Invalid code.</span>';
+                btn.style.display = 'none';
+            }
+        }, 500);
+    });
+    </script>
+</body>
+</html>

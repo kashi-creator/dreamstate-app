@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Admin{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <h1 class="mb-4">Admin Dashboard</h1>
+
+        <!-- Stats -->
+        <div class="stats-row mb-4">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_stories }}</div>
+                <div class="stat-label">Total Stories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_sessions }}</div>
+                <div class="stat-label">Play Sessions</div>
+            </div>
+        </div>
+
+        <!-- Users -->
+        <h2 class="mb-2">Users</h2>
+        <div class="card mb-4" style="overflow-x: auto;">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Tier</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.display_name }} {% if user.is_admin %}<i class="fa-solid fa-shield" style="color: var(--gold); font-size: 0.8rem;"></i>{% endif %}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.subscription_tier }}</td>
+                        <td><span class="admin-badge {{ user.subscription_status }}">{{ user.subscription_status }}</span></td>
+                        <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            {% if user.id != current_user.id %}
+                            <button class="btn btn-ghost btn-sm" onclick="toggleStatus({{ user.id }})">
+                                {{ 'Deactivate' if user.subscription_status == 'active' else 'Activate' }}
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="toggleAdmin({{ user.id }})">
+                                {{ 'Remove Admin' if user.is_admin else 'Make Admin' }}
+                            </button>
+                            {% else %}
+                            <span class="text-muted" style="font-size: 0.8rem;">You</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Themes -->
+        <h2 class="mb-2">Themes ({{ themes|length }})</h2>
+        <div class="grid grid-4 mb-4">
+            {% for theme in themes %}
+            <div class="card" style="padding: 16px; border-top: 3px solid {{ theme.color_primary }};">
+                <strong>{{ theme.name }}</strong>
+                <div class="text-muted" style="font-size: 0.8rem;">{{ theme.slug }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Frequencies -->
+        <h2 class="mb-2">Frequencies ({{ frequencies|length }})</h2>
+        <div class="grid grid-4">
+            {% for freq in frequencies %}
+            <div class="card" style="padding: 16px;">
+                <strong>{{ freq.name }}</strong>
+                <div class="text-muted" style="font-size: 0.8rem;">{{ freq.brain_state }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleStatus(id) {
+    await fetch('/api/admin/toggle-user-status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: id})
+    });
+    location.reload();
+}
+
+async function toggleAdmin(id) {
+    await fetch('/api/admin/toggle-admin', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: id})
+    });
+    location.reload();
+}
+</script>
+{% endblock %}

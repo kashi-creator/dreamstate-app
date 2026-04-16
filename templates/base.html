@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DREAMSTATE{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('dashboard') }}" class="navbar-brand">Dream<span>state</span></a>
+            <ul class="navbar-links">
+                <li><a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a></li>
+                <li><a href="{{ url_for('create_story') }}" class="{{ 'active' if request.endpoint == 'create_story' }}">Create</a></li>
+                <li><a href="{{ url_for('library') }}" class="{{ 'active' if request.endpoint == 'library' }}">Library</a></li>
+                <li>
+                    <a href="{{ url_for('notifications') }}" class="nav-bell {{ 'active' if request.endpoint == 'notifications' }}">
+                        <i class="fa-solid fa-bell"></i>
+                        {% if unread_count > 0 %}<span class="badge">{{ unread_count }}</span>{% endif %}
+                    </a>
+                </li>
+                <li><a href="{{ url_for('settings') }}"><i class="fa-solid fa-gear"></i></a></li>
+                {% if current_user.is_admin %}
+                <li><a href="{{ url_for('admin') }}" class="{{ 'active' if request.endpoint == 'admin' }}">Admin</a></li>
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i></a></li>
+            </ul>
+        </div>
+    </nav>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flashContainer">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i class="fa-solid {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-info-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    {% if current_user.is_authenticated %}
+    <nav class="mobile-tabs">
+        <a href="{{ url_for('dashboard') }}" class="mobile-tab {{ 'active' if request.endpoint == 'dashboard' }}">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="{{ url_for('create_story') }}" class="mobile-tab {{ 'active' if request.endpoint == 'create_story' }}">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Create</span>
+        </a>
+        <a href="{{ url_for('library') }}" class="mobile-tab {{ 'active' if request.endpoint == 'library' }}">
+            <i class="fa-solid fa-book-open"></i>
+            <span>Library</span>
+        </a>
+        <a href="{{ url_for('dream_profile') }}" class="mobile-tab {{ 'active' if request.endpoint == 'dream_profile' }}">
+            <i class="fa-solid fa-moon"></i>
+            <span>Profile</span>
+        </a>
+        <a href="{{ url_for('settings') }}" class="mobile-tab {{ 'active' if request.endpoint == 'settings' }}">
+            <i class="fa-solid fa-gear"></i>
+            <span>Settings</span>
+        </a>
+    </nav>
+    {% endif %}
+
+    <script>
+        // Flash auto-dismiss
+        setTimeout(() => {
+            const fc = document.getElementById('flashContainer');
+            if (fc) fc.style.opacity = '0';
+            setTimeout(() => { if (fc) fc.remove(); }, 300);
+        }, 4000);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

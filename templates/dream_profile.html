@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Dream Profile{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 720px;">
+        <h1 class="mb-2">Your Dream Profile</h1>
+        <p class="text-muted mb-4">This is the map of your deepest desires and the identity you are stepping into.</p>
+
+        {% if profile %}
+        <div class="card mb-3">
+            <div class="profile-field">
+                <div class="profile-field-label">Core Desire</div>
+                <div class="profile-field-value editable" contenteditable="true" data-field="core_desire" onblur="saveField(this)">{{ profile.core_desire or 'Not set' }}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Identity Statement</div>
+                <div class="profile-field-value editable" contenteditable="true" data-field="identity_statement" onblur="saveField(this)">{{ profile.identity_statement or 'Not set' }}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Emotional Tone</div>
+                <div class="profile-field-value editable" contenteditable="true" data-field="emotional_tone" onblur="saveField(this)">{{ profile.emotional_tone or 'Not set' }}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Recurring Themes</div>
+                <div class="profile-field-value editable" contenteditable="true" data-field="recurring_themes" onblur="saveField(this)">{{ profile.recurring_themes or 'Not set' }}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Shadow Blocks</div>
+                <div class="profile-field-value editable" contenteditable="true" data-field="shadow_blocks" onblur="saveField(this)">{{ profile.shadow_blocks or 'Not set' }}</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Dream Life Summary</div>
+                <div class="profile-field-value editable" contenteditable="true" data-field="dream_life_summary" onblur="saveField(this)">{{ profile.dream_life_summary or 'Not set' }}</div>
+            </div>
+        </div>
+
+        {% if profile.voice_rant_text %}
+        <h2 class="mb-2">Your Voice Rant</h2>
+        <div class="card mb-3">
+            <p style="line-height: 1.8; white-space: pre-wrap;">{{ profile.voice_rant_text }}</p>
+        </div>
+        {% endif %}
+
+        {% if responses %}
+        <h2 class="mb-2">Questionnaire Responses</h2>
+        <div class="card">
+            {% for r in responses %}
+            <div style="margin-bottom: 20px; {% if not loop.last %}border-bottom: 1px solid var(--card-border); padding-bottom: 20px;{% endif %}">
+                <div style="font-size: 0.8rem; color: var(--violet-light); margin-bottom: 4px;">Q{{ r.question_number }}</div>
+                <div style="font-family: var(--font-heading); font-size: 1.05rem; margin-bottom: 8px; font-style: italic;">{{ r.question_text }}</div>
+                <div style="color: var(--text-muted);">{{ r.answer_text or 'No answer' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fa-solid fa-moon"></i></div>
+                <h3>No Dream Profile Yet</h3>
+                <p>Complete onboarding to build your dream profile.</p>
+                <a href="{{ url_for('onboarding') }}" class="btn btn-gold">Start Onboarding</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveField(el) {
+    const field = el.dataset.field;
+    const value = el.textContent.trim();
+    await fetch('/api/dream-profile/update', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({[field]: value})
+    });
+    el.style.borderColor = 'var(--gold)';
+    setTimeout(() => el.style.borderColor = '', 1500);
+}
+</script>
+{% endblock %}

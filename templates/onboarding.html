@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Onboarding{% endblock %}
+
+{% block content %}
+<div class="onboarding-wrapper">
+    <div class="onboarding-progress">
+        <div class="step active" id="prog-1"></div>
+        <div class="step" id="prog-2"></div>
+        <div class="step" id="prog-3"></div>
+        <div class="step" id="prog-4"></div>
+        <div class="step" id="prog-5"></div>
+    </div>
+
+    <!-- Step 1: Welcome -->
+    <div class="onboarding-step active" id="step-1">
+        <h2>Welcome, {{ current_user.display_name }}</h2>
+        <p>You are about to build something powerful: a map of your deepest desires, your hidden blocks, and the reality you are ready to step into.</p>
+        <p>This takes about 10 minutes. Be honest. Be raw. Your subconscious is listening.</p>
+        <div class="onboarding-nav">
+            <span></span>
+            <button class="btn btn-gold" onclick="goToStep(2)">I'm Ready <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Step 2: Voice Rant -->
+    <div class="onboarding-step" id="step-2">
+        <h2>Tell Us Everything</h2>
+        <p>Stream of consciousness. What do you want? What do you dream about? What keeps you up at night? What would your life look like if every limitation disappeared? Just let it flow.</p>
+        <div class="form-group">
+            <textarea class="form-textarea" id="voiceRant" rows="8" placeholder="I want... I dream of... My perfect life looks like... I'm tired of... What I really desire is..."></textarea>
+        </div>
+        <div class="onboarding-nav">
+            <button class="btn btn-ghost" onclick="goToStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <button class="btn btn-gold" onclick="saveRantAndNext()" id="rantNextBtn">Continue <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Step 3: Questionnaire -->
+    <div class="onboarding-step" id="step-3">
+        <div class="question-counter" id="qCounter">Question 1 of {{ questions|length }}</div>
+        <div class="question-text" id="qText">{{ questions[0] }}</div>
+        <div class="form-group">
+            <textarea class="form-textarea" id="qAnswer" rows="4" placeholder="Your answer..."></textarea>
+        </div>
+        <div class="onboarding-nav">
+            <button class="btn btn-ghost" id="qPrevBtn" onclick="prevQuestion()"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+            <button class="btn btn-gold" id="qNextBtn" onclick="nextQuestion()">Next <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Step 4: Processing -->
+    <div class="onboarding-step" id="step-4">
+        <div class="processing-animation">
+            <div class="spinner"></div>
+            <h2>Building Your Dream Profile</h2>
+            <p class="text-muted mt-2">Analyzing your desires, patterns, and hidden potential...</p>
+            <p class="text-muted mt-1" style="font-size: 0.85rem;" id="processingStatus">This may take a moment</p>
+        </div>
+    </div>
+
+    <!-- Step 5: Complete -->
+    <div class="onboarding-step" id="step-5">
+        <div class="text-center">
+            <div style="font-size: 3rem; margin-bottom: 16px; color: var(--gold);"><i class="fa-solid fa-sparkles"></i></div>
+            <h2>Your Dream Profile is Ready</h2>
+            <p>We have mapped your desires, your identity, and your frequency. Now it is time to create your first subliminal story.</p>
+            <div class="mt-4">
+                <a href="{{ url_for('create_story') }}" class="btn btn-gold btn-lg">Create Your First Story <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="mt-2">
+                <a href="{{ url_for('dream_profile') }}" class="btn btn-ghost">View Dream Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const questions = {{ questions|tojson }};
+let currentStep = 1;
+let currentQ = 1;
+const answers = {};
+
+function goToStep(step) {
+    document.querySelectorAll('.onboarding-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-' + step).classList.add('active');
+
+    for (let i = 1; i <= 5; i++) {
+        const p = document.getElementById('prog-' + i);
+        p.classList.remove('active', 'done');
+        if (i < step) p.classList.add('done');
+        if (i === step) p.classList.add('active');
+    }
+    currentStep = step;
+}
+
+async function saveRantAndNext() {
+    const text = document.getElementById('voiceRant').value.trim();
+    if (!text) {
+        document.getElementById('voiceRant').style.borderColor = 'var(--error)';
+        return;
+    }
+    const btn = document.getElementById('rantNextBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+    await fetch('/api/onboarding/voice-rant', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text})
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = 'Continue <i class="fa-solid fa-arrow-right"></i>';
+    goToStep(3);
+    renderQuestion();
+}
+
+function renderQuestion() {
+    document.getElementById('qCounter').textContent = `Question ${currentQ} of ${questions.length}`;
+    document.getElementById('qText').textContent = questions[currentQ - 1];
+    document.getElementById('qAnswer').value = answers[currentQ] || '';
+    document.getElementById('qPrevBtn').style.visibility = currentQ === 1 ? 'hidden' : 'visible';
+    document.getElementById('qNextBtn').textContent = currentQ === questions.length ? 'Finish' : 'Next';
+}
+
+async function saveCurrentAnswer() {
+    const answer = document.getElementById('qAnswer').value.trim();
+    if (answer) {
+        answers[currentQ] = answer;
+        await fetch('/api/onboarding/questionnaire', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({question_number: currentQ, answer})
+        });
+    }
+}
+
+async function nextQuestion() {
+    await saveCurrentAnswer();
+    if (currentQ < questions.length) {
+        currentQ++;
+        renderQuestion();
+    } else {
+        goToStep(4);
+        processProfile();
+    }
+}
+
+async function prevQuestion() {
+    await saveCurrentAnswer();
+    if (currentQ > 1) {
+        currentQ--;
+        renderQuestion();
+    } else {
+        goToStep(2);
+    }
+}
+
+async function processProfile() {
+    try {
+        const resp = await fetch('/api/onboarding/process-profile', {method: 'POST'});
+        const data = await resp.json();
+        if (data.success) {
+            document.getElementById('processingStatus').textContent = 'Profile complete!';
+            setTimeout(() => goToStep(5), 1500);
+        }
+    } catch (e) {
+        document.getElementById('processingStatus').textContent = 'Processing complete.';
+        setTimeout(() => goToStep(5), 1500);
+    }
+}
+</script>
+{% endblock %}

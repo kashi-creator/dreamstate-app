@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Settings{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 640px;">
+        <h1 class="mb-4">Settings</h1>
+
+        <form method="POST" action="{{ url_for('settings') }}">
+            <!-- Account -->
+            <div class="settings-section">
+                <h3>Account</h3>
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-label">Display Name</label>
+                        <input type="text" name="display_name" class="form-input" value="{{ current_user.display_name }}">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" value="{{ current_user.email }}" disabled style="opacity: 0.5;">
+                        <small class="text-muted">Email cannot be changed</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Listening -->
+            <div class="settings-section">
+                <h3>Listening Preferences</h3>
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-label">Default Sleep Timer (minutes)</label>
+                        <select name="sleep_timer" class="form-select">
+                            <option value="15" {{ 'selected' if user_settings.sleep_timer_default == 15 }}>15 minutes</option>
+                            <option value="30" {{ 'selected' if user_settings.sleep_timer_default == 30 }}>30 minutes</option>
+                            <option value="45" {{ 'selected' if user_settings.sleep_timer_default == 45 }}>45 minutes</option>
+                            <option value="60" {{ 'selected' if user_settings.sleep_timer_default == 60 }}>1 hour</option>
+                            <option value="90" {{ 'selected' if user_settings.sleep_timer_default == 90 }}>1.5 hours</option>
+                            <option value="120" {{ 'selected' if user_settings.sleep_timer_default == 120 }}>2 hours</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="loop_story" {{ 'checked' if user_settings.loop_story }}>
+                            <span>Loop story (repeat after finished)</span>
+                        </label>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-check">
+                            <input type="checkbox" name="autoplay_next" {{ 'checked' if user_settings.autoplay_next }}>
+                            <span>Auto-play next story</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="settings-section">
+                <h3>Notifications</h3>
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="notification_new_story" {{ 'checked' if user_settings.notification_new_story }}>
+                            <span>Story ready notifications</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="notification_streak" {{ 'checked' if user_settings.notification_streak }}>
+                            <span>Streak reminders</span>
+                        </label>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-check">
+                            <input type="checkbox" name="notification_tips" {{ 'checked' if user_settings.notification_tips }}>
+                            <span>Tips and insights</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-gold btn-block"><i class="fa-solid fa-check"></i> Save Settings</button>
+        </form>
+
+        <!-- Change Password -->
+        <div class="settings-section mt-4">
+            <h3>Change Password</h3>
+            <div class="card">
+                <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" id="currentPw" class="form-input" placeholder="Enter current password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" id="newPw" class="form-input" placeholder="Min 6 characters">
+                </div>
+                <button class="btn btn-outline" onclick="changePw()">Update Password</button>
+                <div id="pwStatus" class="mt-1" style="font-size: 0.85rem;"></div>
+            </div>
+        </div>
+
+        <!-- Subscription -->
+        <div class="settings-section">
+            <h3>Subscription</h3>
+            <div class="card">
+                <div class="flex-between">
+                    <div>
+                        <div style="font-weight: 500;">{{ current_user.subscription_tier|title }} Plan</div>
+                        <div class="text-muted" style="font-size: 0.85rem;">Status: <span class="text-{{ 'gold' if current_user.subscription_status == 'active' else 'muted' }}">{{ current_user.subscription_status|title }}</span></div>
+                    </div>
+                    {% if current_user.founder_code_used %}
+                    <span style="color: var(--gold); font-size: 0.85rem;"><i class="fa-solid fa-crown"></i> Founder</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function changePw() {
+    const current = document.getElementById('currentPw').value;
+    const newPw = document.getElementById('newPw').value;
+    const status = document.getElementById('pwStatus');
+
+    const resp = await fetch('/api/settings/change-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({current_password: current, new_password: newPw})
+    });
+    const data = await resp.json();
+    if (data.success) {
+        status.innerHTML = '<span style="color: var(--success);">Password updated.</span>';
+        document.getElementById('currentPw').value = '';
+        document.getElementById('newPw').value = '';
+    } else {
+        status.innerHTML = `<span style="color: var(--error);">${data.error}</span>`;
+    }
+}
+</script>
+{% endblock %}

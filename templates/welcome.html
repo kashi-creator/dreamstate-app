@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DREAMSTATE - You Already Live There</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="welcome-hero">
+        <div class="welcome-content">
+            <div class="welcome-logo">Dreamstate</div>
+            <h1 class="welcome-headline">You Already<br><em>Live There</em></h1>
+            <p class="welcome-sub">
+                Your subconscious mind doesn't know the difference between imagination and reality.
+                DREAMSTATE uses AI-crafted subliminal stories, sacred frequencies, and your own
+                dream profile to reprogram your reality while you sleep.
+            </p>
+            <div class="welcome-cta-group">
+                <a href="{{ url_for('pricing') }}" class="btn btn-gold btn-lg">Begin Your Shift</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline btn-lg">Sign In</a>
+            </div>
+        </div>
+
+        <div style="position: absolute; bottom: 40px; z-index: 1;">
+            <p style="color: var(--text-dim); font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;">
+                Manifestation-grade audio. AI-personalized. Frequency-tuned.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

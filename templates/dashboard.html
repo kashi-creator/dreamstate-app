@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Welcome back, {{ current_user.display_name }}</h1>
+            <p>Your reality is shifting. Keep listening.</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value">{{ streak.current_streak if streak else 0 }}</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_stories }}</div>
+                <div class="stat-label">Stories Created</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_minutes }}</div>
+                <div class="stat-label">Minutes Listened</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ streak.longest_streak if streak else 0 }}</div>
+                <div class="stat-label">Best Streak</div>
+            </div>
+        </div>
+
+        <!-- Active Player -->
+        {% if active_story %}
+        <div class="player-card">
+            <div class="player-title">{{ active_story.title }}</div>
+            <div class="player-meta">
+                {{ active_story.story_type|replace('_', ' ')|title }}
+                {% if active_story.theme %} &middot; {{ active_story.theme.name }}{% endif %}
+                {% if active_story.frequency %} &middot; {{ active_story.frequency.name }}{% endif %}
+            </div>
+            <div class="player-controls">
+                <button class="play-btn" id="playBtn" onclick="togglePlay()">
+                    <i class="fa-solid fa-play" id="playIcon"></i>
+                </button>
+                <div class="player-progress">
+                    <div class="player-progress-fill" id="progressFill"></div>
+                </div>
+                <span class="player-time" id="playerTime">0:00</span>
+            </div>
+            <div class="sleep-timer-controls">
+                <span><i class="fa-solid fa-moon"></i> Sleep timer:</span>
+                <button class="timer-btn" onclick="setSleepTimer(15)">15m</button>
+                <button class="timer-btn" onclick="setSleepTimer(30)">30m</button>
+                <button class="timer-btn" onclick="setSleepTimer(60)">1h</button>
+                <button class="timer-btn" onclick="setSleepTimer(0)">Off</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="card mb-4">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <h3>No Stories Yet</h3>
+                <p>Create your first subliminal story to begin your transformation.</p>
+                <a href="{{ url_for('create_story') }}" class="btn btn-gold">Create Your First Story</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Stories -->
+        {% if stories %}
+        <div class="section-header">
+            <h2>Recent Stories</h2>
+            <a href="{{ url_for('library') }}" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="grid grid-2">
+            {% for story in stories %}
+            <div class="story-card" onclick="window.location='{{ url_for('read_script', story_id=story.id) }}'">
+                <div class="story-card-header">
+                    <span class="story-card-title">{{ story.title }}</span>
+                    <span class="story-status {{ story.status }}">{{ story.status }}</span>
+                </div>
+                <div class="story-card-type">
+                    {{ story.story_type|replace('_', ' ')|title }}
+                    {% if story.theme %} &middot; {{ story.theme.name }}{% endif %}
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">
+                    <i class="fa-solid fa-play"></i> {{ story.play_count }} plays
+                    {% if story.is_favorite %}<i class="fa-solid fa-heart" style="color: var(--gold); margin-left: 12px;"></i>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isPlaying = false;
+let playStartTime = null;
+let playSessionId = null;
+let elapsed = 0;
+let sleepTimerTimeout = null;
+let timerInterval = null;
+
+{% if active_story %}
+const storyId = {{ active_story.id }};
+{% else %}
+const storyId = null;
+{% endif %}
+
+function togglePlay() {
+    if (!storyId) return;
+    const icon = document.getElementById('playIcon');
+    if (!isPlaying) {
+        isPlaying = true;
+        icon.className = 'fa-solid fa-pause';
+        playStartTime = Date.now();
+        fetch('/api/play/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({story_id: storyId})
+        }).then(r => r.json()).then(d => { playSessionId = d.session_id; });
+        timerInterval = setInterval(updateTimer, 1000);
+    } else {
+        isPlaying = false;
+        icon.className = 'fa-solid fa-play';
+        clearInterval(timerInterval);
+        if (playSessionId) {
+            const dur = Math.floor((Date.now() - playStartTime) / 1000) + elapsed;
+            fetch('/api/play/end', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: playSessionId, duration_seconds: dur})
+            });
+            elapsed += Math.floor((Date.now() - playStartTime) / 1000);
+        }
+    }
+}
+
+function updateTimer() {
+    const secs = Math.floor((Date.now() - playStartTime) / 1000) + elapsed;
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    document.getElementById('playerTime').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    const progress = Math.min((secs / 1800) * 100, 100);
+    document.getElementById('progressFill').style.width = progress + '%';
+}
+
+function setSleepTimer(minutes) {
+    document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+    if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
+    if (minutes > 0) {
+        event.target.classList.add('active');
+        sleepTimerTimeout = setTimeout(() => {
+            if (isPlaying) togglePlay();
+        }, minutes * 60 * 1000);
+    }
+}
+</script>
+{% endblock %}

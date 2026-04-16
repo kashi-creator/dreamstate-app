@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}DREAMSTATE - Library{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h1>Your Story Library</h1>
+            <a href="{{ url_for('create_story') }}" class="btn btn-gold btn-sm"><i class="fa-solid fa-plus"></i> New Story</a>
+        </div>
+
+        {% if stories %}
+        <div class="grid grid-2">
+            {% for story in stories %}
+            <div class="story-card" id="story-{{ story.id }}">
+                <div class="story-card-header">
+                    <span class="story-card-title">{{ story.title }}</span>
+                    <span class="story-status {{ story.status }}">{{ story.status }}</span>
+                </div>
+                <div class="story-card-type">
+                    {{ story.story_type|replace('_', ' ')|title }}
+                    {% if story.theme %} &middot; {{ story.theme.name }}{% endif %}
+                    {% if story.frequency %} &middot; {{ story.frequency.name }}{% endif %}
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 12px;">
+                    <i class="fa-solid fa-play"></i> {{ story.play_count }} plays
+                    &middot; Created {{ story.created_at.strftime('%b %d, %Y') }}
+                </div>
+                <div class="story-card-actions">
+                    {% if story.status == 'ready' %}
+                    <a href="{{ url_for('read_script', story_id=story.id) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-book-open"></i> Read</a>
+                    {% endif %}
+                    <a href="{{ url_for('edit_script', story_id=story.id) }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
+                    <button class="btn btn-outline btn-sm" onclick="toggleFav({{ story.id }})">
+                        <i class="fa-{{ 'solid' if story.is_favorite else 'regular' }} fa-heart" id="fav-{{ story.id }}" style="{{ 'color: var(--gold)' if story.is_favorite else '' }}"></i>
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="dupStory({{ story.id }})"><i class="fa-solid fa-copy"></i></button>
+                    <button class="btn btn-ghost btn-sm" onclick="delStory({{ story.id }})" style="color: var(--error);"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fa-solid fa-book-open"></i></div>
+                <h3>Your Library is Empty</h3>
+                <p>Create your first subliminal story to begin building your reality.</p>
+                <a href="{{ url_for('create_story') }}" class="btn btn-gold">Create Story</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleFav(id) {
+    const resp = await fetch(`/api/stories/${id}/favorite`, {method: 'POST'});
+    const data = await resp.json();
+    if (data.success) {
+        const icon = document.getElementById('fav-' + id);
+        icon.className = data.is_favorite ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+        icon.style.color = data.is_favorite ? 'var(--gold)' : '';
+    }
+}
+
+async function dupStory(id) {
+    const resp = await fetch(`/api/stories/${id}/duplicate`, {method: 'POST'});
+    const data = await resp.json();
+    if (data.success) location.reload();
+}
+
+async function delStory(id) {
+    if (!confirm('Delete this story? This cannot be undone.')) return;
+    const resp = await fetch(`/api/stories/${id}/delete`, {method: 'POST'});
+    const data = await resp.json();
+    if (data.success) {
+        document.getElementById('story-' + id).style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
